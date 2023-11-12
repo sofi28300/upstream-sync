@@ -1,3 +1,4 @@
+import { removeHtmlTags } from "../../helpers/parse";
 import { AbstractEntity } from "./AbstractEntity";
 import { EmailEntity } from "./EmailEntity";
 
@@ -13,11 +14,21 @@ export class MessageEntity extends AbstractEntity {
     super(id);
   }
 
-  public static createFromEmail(senderId: number | null, threadId: number, email: EmailEntity): MessageEntity {
+  public static createFromEmail(
+    senderId: number | null,
+    threadId: number,
+    email: EmailEntity
+  ): MessageEntity {
     if (!email.id) {
       throw new Error("Email must have an id to be converted to a message");
     }
 
-    return new MessageEntity(senderId, threadId, email.id!, email.body, email.date);
+    return new MessageEntity(
+      senderId,
+      threadId,
+      email.id!,
+      removeHtmlTags(email.body),
+      email.date
+    );
   }
 }

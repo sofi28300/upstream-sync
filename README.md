@@ -132,6 +132,14 @@ I did not think about edge cases here.
 
 When creating the messages, remove the HTML tags from the message body. Figure out the best place to add this logic and implement it.
 
+### Task 3: Solution
+
+First of all we have to create a helper function named `removeHtmlTags` that will extract the text from a raw body email.
+
+Then for me the best place to add this logic is in `MessageEntity` inside `createFromEmail` since we are willing to treat extract all the texts from any emails
+
+If there is any edge case to handle like create a method that stores the email raw body in formatted email body we can have this logic inside `createMessageFromEmail` to distinguiche between them and create a message with the right body format.
+
 ### Task 4: Add a unit test
 
 Add a unit test, explain why you chose to test this particular part of the code and more generally what would be the best way to test this project.
