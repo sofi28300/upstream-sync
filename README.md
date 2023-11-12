@@ -86,6 +86,48 @@ Hint: Reply emails appear chronologically after the email to which they are resp
 
 Explain what would be needed, step by step, to take messages stored in the database into account when grouping messages by threads. You can write your answer in the `README.md` file. What parts of the code would you need to modify?
 
+### Task 2: Solution
+
+To take messages stored in the database into account when grouping messages by threads, you will need to modify the existing code in the MessageDisplayService class. Here are the steps you can follow:
+1. **Add ad method to find thread by message in `ThreadRepository`**
+
+In the `ThreadRepository` we will create a method named `findByMessageId`, the return type would be a `ThreadEntity` or `null`
+```typescript
+public async findByMessageId(messageId: string): Promise<ThreadEntity | null> {
+    // Query to find the thread based on message's universalMessageId
+    const row = await this.database.get<ThreadRow>(
+        "SELECT t.* FROM threads t JOIN messages m ON t.id = m.thread_id JOIN emails e ON m.email_id = e.id WHERE e.universal_message_id = @messageId",
+        { "@messageId": messageId }
+    );
+
+    if (!row) return null;
+    return this.loadEntity(row);
+}
+```
+
+2. **In `EmailImportService` Modify the `import` method:**
+instead of using a `map` we will fetch all the existing threads from the db, the we will check if the `inReplyTo` of a given email has already its thread, otherwise we will create a new one
+
+```typescript
+public async import(): Promise<void> {
+    const fetchedEmails = await this.retrieveAndPersistEmails();
+
+    for (const email of fetchedEmails) {
+        let thread: ThreadEntity;
+
+        if (email.inReplyTo) {
+            thread = await this.threadRepository.findByMessageId(email.inReplyTo.email.value) ?? await this.createNewThread(email.subject);
+        } else {
+            thread = await this.createNewThread(email.subject);
+        }
+
+        const message = await this.createMessageFromEmail(email, thread);
+        await this.messageRepository.persist([message]);
+    }
+}
+```
+I did not think about edge cases here.
+
 ### Task 3: Remove HTML tags from messages
 
 When creating the messages, remove the HTML tags from the message body. Figure out the best place to add this logic and implement it.
