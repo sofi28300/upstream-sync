@@ -18,28 +18,50 @@ export class EmailImportService {
 
   public async import(): Promise<void> {
     const fetchedEmails = await this.retrieveAndPersistEmails();
-    const defaultThread = await this.createDefaultThread();
-    const messages = await Promise.all(fetchedEmails.map((email) => this.createMessageFromEmail(email, defaultThread)));
-    await this.messageRepository.persist(messages);
+
+    const threads = new Map<string, ThreadEntity>();
+
+    for (const email of fetchedEmails) {
+      let thread: ThreadEntity;
+
+      if (email.inReplyTo) {
+        thread =
+          threads.get(email.inReplyTo.email.value) ??
+          (await this.createNewThread(email.subject));
+        threads.set(email.universalMessageId.email.value, thread);
+      } else {
+        thread = await this.createNewThread(email.subject);
+        threads.set(email.universalMessageId.email.value, thread);
+      }
+
+      const message = await this.createMessageFromEmail(email, thread);
+      await this.messageRepository.persist([message]);
+    }
   }
 
+  private async createNewThread(subject: string): Promise<ThreadEntity> {
+    const newThread = new ThreadEntity(subject);
+    await this.threadRepository.persist([newThread]);
+    return newThread;
+  }
   private async retrieveAndPersistEmails() {
     const fetchedEmails = await this.emailFetcherService.fetch();
     await this.emailRepository.persist(fetchedEmails);
     return fetchedEmails;
   }
 
-  private async createDefaultThread() {
-    const singleThread = new ThreadEntity("Default Thread");
-    await this.threadRepository.persist([singleThread]);
-    return singleThread;
-  }
-
-  private async createMessageFromEmail(email: EmailEntity, thread: ThreadEntity): Promise<MessageEntity> {
+  private async createMessageFromEmail(
+    email: EmailEntity,
+    thread: ThreadEntity
+  ): Promise<MessageEntity> {
     const user = await this.userRepository.findByEmail(email.from.email);
     const messageSenderId = user?.id ?? null;
 
-    const message = MessageEntity.createFromEmail(messageSenderId, thread.id!, email);
+    const message = MessageEntity.createFromEmail(
+      messageSenderId,
+      thread.id!,
+      email
+    );
     return message;
   }
 }
