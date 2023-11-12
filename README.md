@@ -144,6 +144,16 @@ If there is any edge case to handle like create a method that stores the email r
 
 Add a unit test, explain why you chose to test this particular part of the code and more generally what would be the best way to test this project.
 
+### Task 4: Solution
+
+I setup the jest config
+
+I test the helper function created in **Task 3** with some use cases.
+
+For me the we should unit test all the logic inside the `Repositry` entities because it containts our business logic.
+
+For the services I would prefer une the e2e test to test and some stress test also, since it will be what we would serve to our clients.
+
 ## Feedback
 
 Your insights and feedback on the project and the process are invaluable. Please share your thoughts after you have completed the assignment.
